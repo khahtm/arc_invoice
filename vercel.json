@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/:path(dashboard|invoices|settings|analytics)/:rest*",
+      "has": [
+        {
+          "type": "host",
+          "value": "arcinvoice.org"
+        }
+      ],
+      "destination": "/:path/:rest*"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "arcinvoice.org"
+        }
+      ],
+      "destination": "/dashboard"
+    }
+  ]
+}

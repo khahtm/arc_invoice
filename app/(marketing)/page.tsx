@@ -17,7 +17,8 @@ import {
 import Link from 'next/link';
 
 export default function HomePage() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '/dashboard';
+  // Always use relative path for internal navigation
+  const appUrl = '/dashboard';
 
   return (
     <div className="min-h-screen bg-white">

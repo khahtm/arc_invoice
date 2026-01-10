@@ -36,7 +36,7 @@ export async function POST(
   }
 
   const body = await req.json();
-  const { reason } = body;
+  const { reason, violated_deliverable_index, violated_criteria } = body;
 
   if (!reason || reason.length < 10) {
     return Response.json(
@@ -85,6 +85,8 @@ export async function POST(
       reason,
       status: 'open',
       expires_at: expiresAt.toISOString(),
+      violated_deliverable_index: violated_deliverable_index ?? null,
+      violated_criteria: violated_criteria ?? null,
     })
     .select()
     .single();

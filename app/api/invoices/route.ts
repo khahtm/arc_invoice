@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { generateShortCode } from '@/lib/utils';
-import { invoiceSchema } from '@/lib/validation';
+import { invoiceWithTermsSchema } from '@/lib/validation';
+import { hashTerms } from '@/lib/terms/hash';
 import { z } from 'zod';
 
 export async function GET() {
@@ -36,16 +37,21 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const validatedData = invoiceSchema.parse(body);
+    const validatedData = invoiceWithTermsSchema.parse(body);
 
     const supabase = await createClient();
 
-    // Determine contract version: v3 if milestones (pay-per-milestone), v1 otherwise
-    const hasMilestones = validatedData.milestones && validatedData.milestones.length > 0;
-    const contractVersion = hasMilestones ? 3 : 1;
+    // Determine contract version:
+    // v4 = terms-based escrow (new default)
+    // v3 = milestones (pay-per-milestone)
+    // v1 = simple escrow
+    const hasTerms = validatedData.terms && validatedData.payment_type === 'escrow';
+    const hasMilestones =
+      validatedData.milestones && validatedData.milestones.length > 0;
+    const contractVersion = hasTerms ? 4 : hasMilestones ? 3 : 1;
 
-    // Create invoice (exclude milestones from insert)
-    const { milestones, ...invoiceData } = validatedData;
+    // Create invoice (exclude milestones and terms from insert)
+    const { milestones, terms, ...invoiceData } = validatedData;
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .insert({
@@ -63,8 +69,44 @@ export async function POST(req: Request) {
       return Response.json({ error: invoiceError.message }, { status: 500 });
     }
 
-    // Create milestones if provided
-    if (milestones && milestones.length > 0) {
+    // Handle V4 terms
+    if (hasTerms && terms) {
+      const termsHash = hashTerms(terms);
+
+      // Insert invoice terms
+      const { error: termsError } = await supabase.from('invoice_terms').insert({
+        invoice_id: invoice.id,
+        template_type: terms.template_type,
+        deliverables: terms.deliverables,
+        payment_schedule: terms.payment_schedule,
+        revision_limit: terms.revision_limit ?? 2,
+        auto_release_days: terms.auto_release_days ?? 14,
+        terms_hash: termsHash,
+      });
+
+      if (termsError) {
+        console.error('Failed to save terms:', termsError);
+        // Continue anyway - invoice was created
+      }
+
+      // Record creator signature (implicit - creator signs by creating)
+      const { error: sigError } = await supabase
+        .from('term_signatures')
+        .insert({
+          invoice_id: invoice.id,
+          signer_wallet: walletAddress,
+          signer_role: 'creator',
+          signature: 'implicit',
+          terms_hash: termsHash,
+        });
+
+      if (sigError) {
+        console.error('Failed to save creator signature:', sigError);
+      }
+    }
+
+    // Handle legacy V3 milestones
+    if (!hasTerms && milestones && milestones.length > 0) {
       const milestonesWithInvoiceId = milestones.map((m, i) => ({
         invoice_id: invoice.id,
         order_index: i,

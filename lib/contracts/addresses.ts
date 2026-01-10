@@ -7,14 +7,17 @@ export const CONTRACTS = {
     // USDC contract address on Arc testnet
     // Note: On Arc, USDC is native but has ERC20 wrapper for compatibility
     USDC: '0x3600000000000000000000000000000000000000' as const,
-    // V1 contracts (basic escrow)
+    // V1 contracts (basic escrow) - DEPRECATED
     FACTORY: '0x07a7be2be306a4C37c7E526235BEcB7BF4C018FB' as const,
     // V2/V3 contracts (milestone escrow + fees)
     FEE_COLLECTOR: '0xAE80D683b366e144DFdDD7e2D9667414F689CD9f' as const,
-    // V3: Pay-per-milestone factory (new invoices)
+    // V3: Pay-per-milestone factory (existing invoices)
     MILESTONE_FACTORY: '0x254B00aeCF760Fff8d06364F22c035C077923ac4' as const,
-    // V2 Legacy: Fund-all-upfront factory (existing invoices created before 2026-01-05)
+    // V2 Legacy: Fund-all-upfront factory (existing invoices created before 2026-01-05) - DEPRECATED
     MILESTONE_FACTORY_V2_LEGACY: '0x9F9c0955083459978Af2EaCc6C223315085Fb777' as const,
+    // V4: Terms-based escrow factory (new invoices with terms)
+    // Updated 2026-01-08: Creator can now release (not just payer)
+    TERMS_FACTORY: '0x6E10Eed6f1f1FBB206c8570Fc3Cd394589863C36' as const,
   },
   // Arc Mainnet (Chain ID: 5042001) - Placeholder until mainnet launches
   5042001: {
@@ -23,12 +26,13 @@ export const CONTRACTS = {
     FEE_COLLECTOR: '' as const,
     MILESTONE_FACTORY: '' as const,
     MILESTONE_FACTORY_V2_LEGACY: '' as const,
+    TERMS_FACTORY: '' as const,
   },
 } as const;
 
 export type SupportedChainId = keyof typeof CONTRACTS;
 
-export type ContractName = 'USDC' | 'FACTORY' | 'FEE_COLLECTOR' | 'MILESTONE_FACTORY' | 'MILESTONE_FACTORY_V2_LEGACY';
+export type ContractName = 'USDC' | 'FACTORY' | 'FEE_COLLECTOR' | 'MILESTONE_FACTORY' | 'MILESTONE_FACTORY_V2_LEGACY' | 'TERMS_FACTORY';
 
 export function getContractAddress(
   chainId: number,
@@ -61,4 +65,11 @@ export function getMilestoneFactory(
     return getContractAddress(chainId, 'MILESTONE_FACTORY_V2_LEGACY');
   }
   return getContractAddress(chainId, 'MILESTONE_FACTORY');
+}
+
+/**
+ * Get terms factory address for V4 terms-based escrow
+ */
+export function getTermsFactory(chainId: number): `0x${string}` {
+  return getContractAddress(chainId, 'TERMS_FACTORY');
 }

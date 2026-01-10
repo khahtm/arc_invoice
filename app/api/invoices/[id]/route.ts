@@ -31,7 +31,18 @@ export async function GET(
     return Response.json({ error: 'Invoice not found' }, { status: 404 });
   }
 
-  return Response.json({ invoice: data });
+  // For V4 invoices, also fetch terms
+  let terms = null;
+  if (data.contract_version === 4) {
+    const { data: termsData } = await supabase
+      .from('invoice_terms')
+      .select('*')
+      .eq('invoice_id', id)
+      .single();
+    terms = termsData;
+  }
+
+  return Response.json({ invoice: data, terms });
 }
 
 export async function PATCH(

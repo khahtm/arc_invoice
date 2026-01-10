@@ -10,11 +10,18 @@ import { DirectPayButton } from '@/components/payment/DirectPayButton';
 import { TransakPayButton } from '@/components/payment/TransakPayButton';
 import { FundEscrowButton } from '@/components/escrow/FundEscrowButton';
 import { FundMilestoneButton } from '@/components/escrow/FundMilestoneButton';
+import { TermsReview } from '@/components/terms/TermsReview';
 import { useEscrowStatus } from '@/hooks/useEscrowStatus';
+import {
+  useTermsEscrowStatus,
+  useAllDeliverableStatuses,
+} from '@/hooks/useTermsEscrowStatus';
+import { useDeliverableProofs } from '@/hooks/useDeliverableProofs';
 import { formatUSDC, truncateAddress } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ExternalLink } from 'lucide-react';
 import type { Invoice, Milestone } from '@/types/database';
+import type { InvoiceTerms } from '@/types/terms';
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: 'Awaiting Payment', color: 'bg-yellow-500' },
@@ -32,8 +39,14 @@ export default function PaymentPage({
   const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [terms, setTerms] = useState<InvoiceTerms | null>(null);
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Determine invoice version
+  const isV4 = invoice?.contract_version === 4;
+  const isV3 = invoice?.contract_version === 3;
 
   useEffect(() => {
     fetch(`/api/pay/${code}`)
@@ -60,18 +73,46 @@ export default function PaymentPage({
   }, [invoice?.id]);
 
   useEffect(() => {
-    const hasMilestones = invoice?.contract_version === 2 || invoice?.contract_version === 3;
+    const hasMilestones =
+      invoice?.contract_version === 2 || invoice?.contract_version === 3;
     if (hasMilestones && invoice?.id) {
       fetchMilestones();
     }
   }, [invoice, fetchMilestones]);
 
-  // Get current milestone index for V3 sequential funding
-  const isV3 = invoice?.contract_version === 3;
+  // Fetch terms for V4 invoices
+  useEffect(() => {
+    if (isV4 && invoice?.id) {
+      fetch(`/api/invoices/${invoice.id}/terms`)
+        .then((res) => res.json())
+        .then((data) => setTerms(data.terms))
+        .catch(() => setTerms(null));
+    }
+  }, [isV4, invoice?.id]);
+
+  // V3 escrow status
   const { currentMilestone, refetch: refetchEscrow } = useEscrowStatus(
-    invoice?.escrow_address as `0x${string}` | undefined,
+    !isV4 ? (invoice?.escrow_address as `0x${string}` | undefined) : undefined,
     invoice?.contract_version
   );
+
+  // V4 escrow status
+  const {
+    currentDeliverable: v4CurrentDeliverable,
+    refetch: refetchV4Status,
+  } = useTermsEscrowStatus(
+    isV4 ? (invoice?.escrow_address as `0x${string}`) : undefined
+  );
+
+  // V4 deliverable proofs (get full proofs array for TermsReview)
+  const { proofs } = useDeliverableProofs(isV4 ? invoice?.id ?? null : null);
+
+  // V4 deliverable on-chain statuses
+  const { statuses: deliverableStatuses, refetch: refetchDeliverableStatuses } =
+    useAllDeliverableStatuses(
+      isV4 ? (invoice?.escrow_address as `0x${string}`) : undefined,
+      isV4 && terms ? terms.deliverables.length : 0
+    );
 
   const handlePaymentSuccess = async (txHash: string) => {
     try {
@@ -93,15 +134,16 @@ export default function PaymentPage({
       router.push(`/pay/${code}/success?tx=${txHash}`);
     } catch (err) {
       console.error('Payment update error:', err);
-      // Still redirect to success - payment went through, just DB update failed
       toast.error('Payment sent! Status update may be delayed.');
       router.push(`/pay/${code}/success?tx=${txHash}`);
     }
   };
 
   const handlePaymentError = (err: Error) => {
-    // Simplify user rejection message
-    if (err.message?.includes('User rejected') || err.message?.includes('user rejected')) {
+    if (
+      err.message?.includes('User rejected') ||
+      err.message?.includes('user rejected')
+    ) {
       toast.error('Transaction cancelled');
       return;
     }
@@ -137,11 +179,14 @@ export default function PaymentPage({
   // Handler for V3 milestone funding success
   const handleMilestoneFundSuccess = async (milestoneId: string) => {
     try {
-      const res = await fetch(`/api/invoices/${invoice?.id}/milestones/${milestoneId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'funded' }),
-      });
+      const res = await fetch(
+        `/api/invoices/${invoice?.id}/milestones/${milestoneId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'funded' }),
+        }
+      );
 
       if (!res.ok) {
         const data = await res.json();
@@ -151,12 +196,69 @@ export default function PaymentPage({
       }
 
       toast.success('Milestone funded!');
-      // Refresh milestones and escrow status
       fetchMilestones();
       refetchEscrow();
     } catch (err) {
       console.error('Milestone fund error:', err);
       toast.error('Status update failed');
+    }
+  };
+
+  // Handler for V4 terms funding success
+  const handleV4FundSuccess = async (txHash: string) => {
+    try {
+      // Refetch status to get UPDATED values from on-chain
+      const { data: updatedDetails } = await refetchV4Status();
+      await refetchDeliverableStatuses();
+
+      if (!updatedDetails) {
+        toast.success('Deliverable funded!');
+        return;
+      }
+
+      // Use FRESH on-chain values, not stale React state or database values
+      // getDetails returns: [0-8]...,[9]deliverableCount,[10]currentDeliverable
+      const onChainDeliverableCount = Number(updatedDetails[9]);
+      const onChainCurrentDeliverable = Number(updatedDetails[10]);
+
+      const termsDeliverableCount = terms?.deliverables.length ?? 0;
+
+      console.log('[V4 Fund] Comparing:', {
+        onChainCurrentDeliverable,
+        onChainDeliverableCount,
+        termsDeliverableCount,
+        allFundedCheck: `${onChainCurrentDeliverable} >= ${onChainDeliverableCount}`,
+      });
+
+      // Safety check: contract and database must have same deliverable count
+      if (onChainDeliverableCount !== termsDeliverableCount) {
+        console.error('[V4 Fund] MISMATCH! Contract has', onChainDeliverableCount,
+          'deliverables but terms has', termsDeliverableCount);
+        toast.error('Contract/terms deliverable count mismatch. Please contact support.');
+        return;
+      }
+
+      // After funding, contract increments currentDeliverable
+      // All funded when currentDeliverable == deliverableCount
+      const allFunded = onChainCurrentDeliverable >= onChainDeliverableCount;
+
+      if (allFunded) {
+        // Only mark invoice as funded when ALL deliverables are funded
+        await fetch(`/api/pay/${code}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'funded', tx_hash: txHash }),
+        });
+        // Update React state to reflect funded status
+        setInvoice((prev) => (prev ? { ...prev, status: 'funded' } : prev));
+        toast.success('All deliverables funded! Invoice complete.');
+      } else {
+        toast.success(
+          `Deliverable ${onChainCurrentDeliverable} of ${onChainDeliverableCount} funded!`
+        );
+      }
+    } catch (err) {
+      console.error('Status update failed:', err);
     }
   };
 
@@ -229,7 +331,7 @@ export default function PaymentPage({
         </div>
 
         {/* Proof of Work - for non-milestone invoices */}
-        {invoice.proof_url && !isV3 && (
+        {invoice.proof_url && !isV3 && !isV4 && (
           <div className="py-4 border-t">
             <p className="text-sm font-medium mb-2">Proof of Work</p>
             <a
@@ -246,15 +348,40 @@ export default function PaymentPage({
           </div>
         )}
 
+        {/* V4 Terms Review with Per-Deliverable Funding */}
+        {isV4 && terms && invoice.escrow_address && !isPaid && (
+          <div className="py-4 border-t space-y-4">
+            <TermsReview
+              terms={terms}
+              totalAmount={invoice.amount}
+              agreed={termsAgreed}
+              onAgree={setTermsAgreed}
+              // V4-specific props for per-deliverable funding
+              escrowAddress={invoice.escrow_address as `0x${string}`}
+              currentDeliverable={v4CurrentDeliverable}
+              proofs={proofs}
+              deliverableStatuses={deliverableStatuses}
+              termsAgreed={termsAgreed}
+              onFundSuccess={handleV4FundSuccess}
+              onFundError={handlePaymentError}
+            />
+
+            <div className="flex justify-center">
+              <ConnectButton />
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Fund deliverables sequentially after verifying proof of work
+            </p>
+          </div>
+        )}
+
         {/* V3 Pay-Per-Milestone */}
         {isV3 && milestones.length > 0 && invoice.escrow_address && (
           <div className="py-4 border-t space-y-3">
             <p className="text-sm font-medium">Payment Milestones</p>
             {milestones.map((m, i) => (
-              <div
-                key={m.id}
-                className="p-3 border rounded-lg"
-              >
+              <div key={m.id} className="p-3 border rounded-lg">
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="font-medium text-sm">
@@ -280,7 +407,6 @@ export default function PaymentPage({
                     )}
                   </div>
                 </div>
-                {/* Show proof link if available */}
                 {m.proof_url && (
                   <a
                     href={m.proof_url}
@@ -317,7 +443,7 @@ export default function PaymentPage({
           </div>
         )}
 
-        {/* Payment Actions */}
+        {/* Payment Actions (for non-V4) */}
         {isPaid ? (
           <div className="mt-4 text-center">
             <p className="text-muted-foreground">
@@ -325,86 +451,88 @@ export default function PaymentPage({
             </p>
           </div>
         ) : (
-          <div className="space-y-4 mt-4">
-            {/* Section Header */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Payment Options
-                </span>
-              </div>
-            </div>
-
-            {/* Crypto Payment */}
-            <div className="space-y-2">
-              <div className="flex justify-center">
-                <ConnectButton />
-              </div>
-
-              {invoice.payment_type === 'direct' && (
-                <DirectPayButton
-                  amount={invoice.amount}
-                  recipient={invoice.creator_wallet as `0x${string}`}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                />
-              )}
-
-              {/* V1/V2: Fund all upfront */}
-              {invoice.payment_type === 'escrow' &&
-                invoice.escrow_address &&
-                !isV3 && (
-                  <FundEscrowButton
-                    escrowAddress={invoice.escrow_address as `0x${string}`}
-                    amount={invoice.amount.toString()}
-                    contractVersion={invoice.contract_version}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                )}
-            </div>
-
-            {/* Fiat Payment Divider */}
-            {!isV3 && (
+          !isV4 && (
+            <div className="space-y-4 mt-4">
+              {/* Section Header */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
-                    or pay with card
+                    Payment Options
                   </span>
                 </div>
               </div>
-            )}
 
-            {/* Fiat Payment - Transak (not for V3 milestone invoices) */}
-            {!isV3 && (
-              <TransakPayButton
-                amount={invoice.amount}
-                walletAddress={invoice.escrow_address || invoice.creator_wallet}
-                invoiceCode={invoice.short_code}
-                onSuccess={handleTransakSuccess}
-                onError={handlePaymentError}
-              />
-            )}
+              {/* Crypto Payment */}
+              <div className="space-y-2">
+                <div className="flex justify-center">
+                  <ConnectButton />
+                </div>
 
-            {/* V3: Milestones funded individually via section above */}
-            {isV3 && invoice.escrow_address && (
-              <p className="text-sm text-muted-foreground text-center">
-                Fund milestones above as work is completed
-              </p>
-            )}
+                {invoice.payment_type === 'direct' && (
+                  <DirectPayButton
+                    amount={invoice.amount}
+                    recipient={invoice.creator_wallet as `0x${string}`}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                  />
+                )}
 
-            {invoice.payment_type === 'escrow' && !invoice.escrow_address && (
-              <p className="text-sm text-muted-foreground text-center">
-                Escrow not yet created. Please contact the invoice creator.
-              </p>
-            )}
-          </div>
+                {/* V1/V2: Fund all upfront */}
+                {invoice.payment_type === 'escrow' &&
+                  invoice.escrow_address &&
+                  !isV3 && (
+                    <FundEscrowButton
+                      escrowAddress={invoice.escrow_address as `0x${string}`}
+                      amount={invoice.amount.toString()}
+                      contractVersion={invoice.contract_version}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                    />
+                  )}
+              </div>
+
+              {/* Fiat Payment Divider */}
+              {!isV3 && (
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      or pay with card
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Fiat Payment - Transak (not for V3 milestone invoices) */}
+              {!isV3 && (
+                <TransakPayButton
+                  amount={invoice.amount}
+                  walletAddress={invoice.escrow_address || invoice.creator_wallet}
+                  invoiceCode={invoice.short_code}
+                  onSuccess={handleTransakSuccess}
+                  onError={handlePaymentError}
+                />
+              )}
+
+              {/* V3: Milestones funded individually via section above */}
+              {isV3 && invoice.escrow_address && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Fund milestones above as work is completed
+                </p>
+              )}
+
+              {invoice.payment_type === 'escrow' && !invoice.escrow_address && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Escrow not yet created. Please contact the invoice creator.
+                </p>
+              )}
+            </div>
+          )
         )}
 
         {/* Payment Type Info */}
@@ -412,7 +540,9 @@ export default function PaymentPage({
           <p className="text-xs text-muted-foreground text-center">
             {invoice.payment_type === 'direct'
               ? 'Direct payment - funds sent immediately to recipient'
-              : 'Escrow payment - funds held securely until release'}
+              : isV4
+                ? 'Terms-based escrow - funds held securely, released per deliverable'
+                : 'Escrow payment - funds held securely until release'}
           </p>
         </div>
       </Card>

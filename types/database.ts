@@ -1,3 +1,6 @@
+// Re-export terms types
+export * from './terms';
+
 export type PaymentType = 'direct' | 'escrow';
 export type InvoiceStatus = 'draft' | 'pending' | 'funded' | 'released' | 'refunded';
 // V3: pending -> funded -> released (no separate approval)
@@ -101,6 +104,9 @@ export interface Dispute {
   resolved_at: string | null;
   expires_at: string | null;
   created_at: string;
+  // V4: Deliverable-specific dispute fields
+  violated_deliverable_index: number | null;
+  violated_criteria: string | null;
 }
 
 export interface DisputeEvidence {

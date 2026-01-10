@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Invoice, Milestone } from '@/types/database';
+import type { InvoiceTerms, Deliverable } from '@/types/terms';
 import { formatUSDC, truncateAddress } from '@/lib/utils';
 
 // Arc logo as base64
@@ -16,6 +17,15 @@ const COLORS = {
   border: { r: 229, g: 231, b: 235 },      // Border gray
 };
 
+// Deliverable status for PDF (includes contract state)
+interface PdfDeliverable {
+  name: string;
+  criteria: string;
+  amount: number;
+  percentageOfTotal: number;
+  status: 'pending' | 'funded' | 'released' | 'disputed';
+}
+
 interface PdfInvoiceData {
   shortCode: string;
   amount: number;
@@ -29,11 +39,19 @@ interface PdfInvoiceData {
   txHash?: string | null;
   autoReleaseDays?: number;
   createdAt: string;
+  contractVersion?: number;
+  // V2/V3 milestones
   milestones?: Array<{
     description: string;
     amount: number;
     status: string;
   }>;
+  // V4 deliverables with contract status
+  deliverables?: PdfDeliverable[];
+  // V4 contract state
+  fundedAmount?: number;
+  releasedAmount?: number;
+  payerWallet?: string | null;
 }
 
 const PAGE_WIDTH = 210;
@@ -65,8 +83,12 @@ export async function generateInvoicePdf(data: PdfInvoiceData): Promise<Blob> {
   // Description
   y = drawDescriptionSection(doc, data, y);
 
-  // Milestones (if any)
-  if (data.milestones && data.milestones.length > 0) {
+  // V4: Deliverables table
+  if (data.deliverables && data.deliverables.length > 0) {
+    y = drawDeliverablesTable(doc, data.deliverables, y);
+  }
+  // V2/V3: Milestones table
+  else if (data.milestones && data.milestones.length > 0) {
     y = drawMilestonesTable(doc, data.milestones, y);
   }
 
@@ -277,6 +299,88 @@ function drawMilestonesTable(
   return y;
 }
 
+function drawDeliverablesTable(
+  doc: jsPDF,
+  deliverables: PdfDeliverable[],
+  y: number
+): number {
+  // Table header
+  doc.setFillColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.rect(MARGIN, y, CONTENT_WIDTH, 8, 'F');
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('#', MARGIN + 4, y + 5.5);
+  doc.text('DELIVERABLE', MARGIN + 12, y + 5.5);
+  doc.text('AMOUNT', PAGE_WIDTH - MARGIN - 40, y + 5.5);
+  doc.text('STATUS', PAGE_WIDTH - MARGIN - 12, y + 5.5, { align: 'right' });
+
+  y += 8;
+
+  // Table rows
+  deliverables.forEach((d, i) => {
+    const rowY = y + i * 12;
+    const isEven = i % 2 === 0;
+
+    // Row background
+    if (isEven) {
+      doc.setFillColor(COLORS.light.r, COLORS.light.g, COLORS.light.b);
+      doc.rect(MARGIN, rowY, CONTENT_WIDTH, 12, 'F');
+    }
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+
+    // Number
+    doc.text(`${i + 1}`, MARGIN + 4, rowY + 5);
+
+    // Name (bold) + criteria (truncated)
+    doc.setFont('helvetica', 'bold');
+    const nameText = d.name.length > 25 ? d.name.slice(0, 22) + '...' : d.name;
+    doc.text(nameText, MARGIN + 12, rowY + 5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+    const criteriaText = d.criteria.length > 40 ? d.criteria.slice(0, 37) + '...' : d.criteria;
+    doc.text(criteriaText, MARGIN + 12, rowY + 9.5);
+
+    // Amount
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+    doc.text(`${formatUSDC(d.amount)} (${d.percentageOfTotal}%)`, PAGE_WIDTH - MARGIN - 40, rowY + 7);
+
+    // Status badge
+    const statusColor = getDeliverableStatusColor(d.status);
+    doc.setFillColor(statusColor.r, statusColor.g, statusColor.b);
+    doc.roundedRect(PAGE_WIDTH - MARGIN - 22, rowY + 3.5, 18, 5, 1, 1, 'F');
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text(d.status.toUpperCase(), PAGE_WIDTH - MARGIN - 13, rowY + 7, { align: 'center' });
+  });
+
+  y += deliverables.length * 12 + 8;
+
+  return y;
+}
+
+function getDeliverableStatusColor(status: PdfDeliverable['status']): { r: number; g: number; b: number } {
+  switch (status) {
+    case 'released':
+      return COLORS.success;
+    case 'funded':
+      return COLORS.primary;
+    case 'disputed':
+      return { r: 239, g: 68, b: 68 }; // Red
+    case 'pending':
+    default:
+      return COLORS.warning;
+  }
+}
+
 function drawPaymentInfo(doc: jsPDF, data: PdfInvoiceData, y: number): number {
   // Section header
   doc.setFillColor(COLORS.light.r, COLORS.light.g, COLORS.light.b);
@@ -411,13 +515,42 @@ function getStatusColor(status: string): { r: number; g: number; b: number } {
   }
 }
 
+// Deliverable on-chain status (from useAllDeliverableStatuses)
+export interface DeliverableContractStatus {
+  funded: boolean;
+  approved: boolean;
+  disputed: boolean;
+}
+
 /**
- * Convert Invoice + Milestones to PdfInvoiceData
+ * Convert Invoice + Milestones/Terms to PdfInvoiceData
  */
 export function invoiceToPdfData(
   invoice: Invoice,
-  milestones?: Milestone[]
+  milestones?: Milestone[],
+  terms?: InvoiceTerms | null,
+  deliverableStatuses?: DeliverableContractStatus[]
 ): PdfInvoiceData {
+  // Build deliverables for V4 contracts
+  let deliverables: PdfDeliverable[] | undefined;
+  if (invoice.contract_version === 4 && terms?.deliverables) {
+    deliverables = terms.deliverables.map((d, index) => {
+      const contractStatus = deliverableStatuses?.[index];
+      let status: PdfDeliverable['status'] = 'pending';
+      if (contractStatus?.approved) status = 'released';
+      else if (contractStatus?.disputed) status = 'disputed';
+      else if (contractStatus?.funded) status = 'funded';
+
+      return {
+        name: d.name,
+        criteria: d.criteria,
+        amount: (d.percentageOfTotal / 100) * invoice.amount,
+        percentageOfTotal: d.percentageOfTotal,
+        status,
+      };
+    });
+  }
+
   return {
     shortCode: invoice.short_code,
     amount: invoice.amount,
@@ -429,12 +562,14 @@ export function invoiceToPdfData(
     status: invoice.status,
     escrowAddress: invoice.escrow_address,
     txHash: invoice.tx_hash,
-    autoReleaseDays: invoice.auto_release_days,
+    autoReleaseDays: invoice.auto_release_days ?? terms?.auto_release_days,
     createdAt: invoice.created_at,
+    contractVersion: invoice.contract_version,
     milestones: milestones?.map((m) => ({
       description: m.description,
       amount: m.amount,
       status: m.status,
     })),
+    deliverables,
   };
 }

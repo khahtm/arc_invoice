@@ -4,13 +4,16 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateInvoicePdf, invoiceToPdfData } from '@/lib/pdf/invoice-pdf-generator';
+import { generateInvoicePdf, invoiceToPdfData, DeliverableContractStatus } from '@/lib/pdf/invoice-pdf-generator';
 import type { Invoice, Milestone } from '@/types/database';
+import type { InvoiceTerms } from '@/types/terms';
 import { cn } from '@/lib/utils';
 
 interface InvoicePdfDownloadProps {
   invoice: Invoice;
   milestones?: Milestone[];
+  terms?: InvoiceTerms | null;
+  deliverableStatuses?: DeliverableContractStatus[];
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'default' | 'sm' | 'icon';
   className?: string;
@@ -23,6 +26,8 @@ interface InvoicePdfDownloadProps {
 export function InvoicePdfDownload({
   invoice,
   milestones,
+  terms,
+  deliverableStatuses,
   variant = 'outline',
   size = 'default',
   className,
@@ -39,7 +44,7 @@ export function InvoicePdfDownload({
   const handleDownload = async () => {
     setIsLoading(true);
     try {
-      const pdfData = invoiceToPdfData(invoice, milestones);
+      const pdfData = invoiceToPdfData(invoice, milestones, terms, deliverableStatuses);
       const blob = await generateInvoicePdf(pdfData);
 
       // Create download link

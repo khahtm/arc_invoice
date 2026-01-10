@@ -1,26 +1,52 @@
 'use client';
 
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useSwitchChain,
+  useReadContract,
+  useChainId,
+} from 'wagmi';
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Wallet, LogOut, Copy, Check, AlertTriangle } from 'lucide-react';
-import { truncateAddress } from '@/lib/utils';
+import { truncateAddress, formatUSDC } from '@/lib/utils';
 import { arcTestnet } from '@/lib/chains/arc';
 import { toast } from 'sonner';
+import { ERC20_ABI } from '@/lib/contracts/abi';
+import { getContractAddress } from '@/lib/contracts/addresses';
 
 export function ConnectButton() {
   // IMPORTANT: Use chainId from useAccount (actual wallet chain), not useChainId (wagmi config)
   const { address, isConnected, connector, chainId } = useAccount();
+  const configChainId = useChainId();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [copied, setCopied] = useState(false);
+
+  // Fetch USDC balance
+  const { data: usdcBalance } = useReadContract({
+    address: getContractAddress(configChainId, 'USDC'),
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && isConnected },
+  });
+
+  // Format balance (USDC has 6 decimals)
+  const formattedBalance =
+    usdcBalance !== undefined
+      ? formatUSDC(Number(usdcBalance) / 1e6)
+      : '...';
 
   // Add Arc testnet to wallet if not present
   const addArcTestnet = useCallback(async () => {
@@ -103,16 +129,26 @@ export function ConnectButton() {
             {truncateAddress(address)}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleCopy}>
-            {copied ? (
-              <Check className="mr-2 h-4 w-4" />
-            ) : (
-              <Copy className="mr-2 h-4 w-4" />
-            )}
-            Copy Address
+        <DropdownMenuContent align="end" className="min-w-[200px]">
+          {/* Balance display */}
+          <div className="px-2 py-2 text-center">
+            <p className="text-xs text-muted-foreground">USDC Balance</p>
+            <p className="text-lg font-semibold">{formattedBalance}</p>
+          </div>
+          <DropdownMenuSeparator />
+          {/* Address with copy */}
+          <DropdownMenuItem onClick={handleCopy} className="cursor-pointer">
+            <div className="flex items-center justify-between w-full">
+              <span className="font-mono text-sm">{truncateAddress(address, 6)}</span>
+              {copied ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <Copy className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => disconnect()}>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => disconnect()} className="cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />
             Disconnect
           </DropdownMenuItem>

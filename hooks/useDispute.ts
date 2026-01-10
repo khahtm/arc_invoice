@@ -8,7 +8,11 @@ interface UseDisputeReturn {
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  openDispute: (reason: string) => Promise<void>;
+  openDispute: (
+    reason: string,
+    deliverableIndex?: number,
+    violatedCriteria?: string
+  ) => Promise<void>;
   proposeResolution: (
     disputeId: string,
     resolutionType: ResolutionType,
@@ -55,13 +59,21 @@ export function useDispute(invoiceId: string | null): UseDisputeReturn {
     fetchDispute();
   }, [fetchDispute]);
 
-  const openDispute = async (reason: string) => {
+  const openDispute = async (
+    reason: string,
+    deliverableIndex?: number,
+    violatedCriteria?: string
+  ) => {
     if (!invoiceId) throw new Error('No invoice ID');
 
     const res = await fetch(`/api/invoices/${invoiceId}/disputes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({
+        reason,
+        violated_deliverable_index: deliverableIndex,
+        violated_criteria: violatedCriteria,
+      }),
     });
 
     if (!res.ok) {

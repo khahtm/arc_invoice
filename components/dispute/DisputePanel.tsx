@@ -14,6 +14,7 @@ import { KlerosEvidenceForm } from './KlerosEvidenceForm';
 import { formatUSDC, truncateAddress } from '@/lib/utils';
 import { useAccount } from 'wagmi';
 import { AlertTriangle } from 'lucide-react';
+import type { InvoiceTerms, Deliverable } from '@/types/terms';
 
 interface DisputePanelProps {
   invoiceId: string;
@@ -21,14 +22,18 @@ interface DisputePanelProps {
   escrowAddress: `0x${string}` | null;
   creatorWallet: string;
   invoiceStatus: string;
+  contractVersion?: number;
+  terms?: InvoiceTerms | null;
 }
 
 export function DisputePanel({
   invoiceId,
   invoiceAmount,
   escrowAddress,
-  creatorWallet,
+  creatorWallet: _creatorWallet,
   invoiceStatus,
+  contractVersion,
+  terms,
 }: DisputePanelProps) {
   const { address } = useAccount();
   const {
@@ -40,6 +45,9 @@ export function DisputePanel({
     rejectResolution,
     submitEvidence,
   } = useDispute(invoiceId);
+
+  const isV4 = contractVersion === 4;
+  const deliverables: Deliverable[] = terms?.deliverables ?? [];
 
   const isProposer =
     dispute?.proposed_by?.toLowerCase() === address?.toLowerCase();
@@ -67,7 +75,11 @@ export function DisputePanel({
               Having an issue with this payment? Open a dispute to propose a
               resolution with the other party.
             </p>
-            <OpenDisputeButton onSubmit={openDispute} />
+            <OpenDisputeButton
+              onSubmit={openDispute}
+              isV4={isV4}
+              deliverables={deliverables}
+            />
           </div>
         </div>
       </Card>
@@ -105,6 +117,27 @@ export function DisputePanel({
         <p className="font-medium mb-1">Reason:</p>
         <p>{dispute.reason}</p>
       </div>
+
+      {/* V4: Disputed deliverable info */}
+      {isV4 && dispute.violated_deliverable_index !== null && dispute.violated_deliverable_index !== undefined && (
+        <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 p-3 rounded text-sm space-y-1">
+          <p className="font-medium text-orange-700 dark:text-orange-300">
+            Disputed Deliverable: #{(dispute.violated_deliverable_index) + 1} -{' '}
+            {deliverables[dispute.violated_deliverable_index]?.name || 'Unknown'}
+          </p>
+          {deliverables[dispute.violated_deliverable_index]?.criteria && (
+            <p className="text-muted-foreground">
+              <span className="font-medium">Agreed Criteria:</span>{' '}
+              {deliverables[dispute.violated_deliverable_index].criteria}
+            </p>
+          )}
+          {dispute.violated_criteria && (
+            <p className="text-orange-700 dark:text-orange-300">
+              <span className="font-medium">Issue:</span> {dispute.violated_criteria}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Proposed resolution */}
       {dispute.status === 'proposed' && dispute.resolution_type && (

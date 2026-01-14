@@ -126,14 +126,14 @@ export function ConnectButton() {
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="gap-2">
             <Wallet className="h-4 w-4" />
-            {truncateAddress(address)}
+            <span className="font-mono">{truncateAddress(address)}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[200px]">
           {/* Balance display */}
           <div className="px-2 py-2 text-center">
             <p className="text-xs text-muted-foreground">USDC Balance</p>
-            <p className="text-lg font-semibold">{formattedBalance}</p>
+            <p className="text-lg font-semibold font-mono">{formattedBalance}</p>
           </div>
           <DropdownMenuSeparator />
           {/* Address with copy */}

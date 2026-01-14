@@ -143,7 +143,7 @@ export default function HomePage() {
                   <div className="w-3 h-3 rounded-full bg-gray-300" />
                 </div>
                 <div className="flex-1 flex justify-center">
-                  <div className="bg-white rounded-lg px-4 py-1.5 text-sm text-gray-500 border">
+                  <div className="bg-white rounded-lg px-4 py-1.5 text-sm text-gray-500 border font-mono">
                     arcinvoice.org/dashboard
                   </div>
                 </div>
@@ -414,7 +414,7 @@ function StatCard({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <p className="text-sm text-gray-500 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-2xl font-bold text-gray-900 font-mono">{value}</p>
       <p
         className={`text-xs mt-1 ${positive ? 'text-gray-900' : 'text-gray-500'}`}
       >
@@ -449,12 +449,12 @@ function InvoiceRow({
           <CreditCard className="w-5 h-5 text-gray-500" />
         </div>
         <div>
-          <p className="font-medium text-gray-900 text-sm">{code}</p>
+          <p className="font-medium text-gray-900 text-sm font-mono">{code}</p>
           <p className="text-xs text-gray-500">{client}</p>
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <p className="font-semibold text-gray-900">{amount}</p>
+        <p className="font-semibold text-gray-900 font-mono">{amount}</p>
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}
         >

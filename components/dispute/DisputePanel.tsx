@@ -96,7 +96,7 @@ export function DisputePanel({
             Dispute
           </h3>
           <p className="text-sm text-muted-foreground">
-            Opened by {truncateAddress(dispute.opened_by)}
+            Opened by <span className="font-mono">{truncateAddress(dispute.opened_by)}</span>
           </p>
         </div>
         <Badge
@@ -150,11 +150,11 @@ export function DisputePanel({
             <div className="text-sm">
               <p>
                 Payer receives:{' '}
-                {formatUSDC((dispute.resolution_payer_amount || 0) * 1e6)}
+                <span className="font-mono">{formatUSDC((dispute.resolution_payer_amount || 0) * 1e6)}</span>
               </p>
               <p>
                 Creator receives:{' '}
-                {formatUSDC((dispute.resolution_creator_amount || 0) * 1e6)}
+                <span className="font-mono">{formatUSDC((dispute.resolution_creator_amount || 0) * 1e6)}</span>
               </p>
             </div>
           )}

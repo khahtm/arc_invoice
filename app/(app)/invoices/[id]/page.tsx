@@ -294,7 +294,7 @@ export default function InvoiceDetailPage({
       <Card className="p-6 bg-primary/5 border-primary/20">
         <h2 className="font-semibold mb-2">Payment Link</h2>
         <div className="flex items-center gap-2">
-          <code className="flex-1 bg-background px-3 py-2 rounded text-sm break-all">
+          <code className="flex-1 bg-background px-3 py-2 rounded text-sm break-all font-mono">
             {paymentUrl}
           </code>
           <Button variant="outline" size="icon" onClick={handleCopyLink}>
@@ -320,7 +320,7 @@ export default function InvoiceDetailPage({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Amount</p>
-            <p className="text-2xl font-bold">{formatUSDC(invoice.amount)}</p>
+            <p className="text-2xl font-bold font-mono">{formatUSDC(invoice.amount)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Payment Type</p>
@@ -366,7 +366,7 @@ export default function InvoiceDetailPage({
 
         <div className="border-t pt-4 text-sm text-muted-foreground">
           <p>Created: {new Date(invoice.created_at).toLocaleString()}</p>
-          <p>Recipient: {truncateAddress(invoice.creator_wallet)}</p>
+          <p>Recipient: <span className="font-mono">{truncateAddress(invoice.creator_wallet)}</span></p>
         </div>
       </Card>
 
@@ -417,7 +417,7 @@ export default function InvoiceDetailPage({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">
-                        Milestone {index + 1}: {formatUSDC(milestone.amount)}
+                        Milestone {index + 1}: <span className="font-mono">{formatUSDC(milestone.amount)}</span>
                       </p>
                       <p className="text-sm text-muted-foreground line-clamp-1">
                         {milestone.description}
@@ -488,7 +488,7 @@ export default function InvoiceDetailPage({
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">
-                          {index + 1}. {deliverable.name}: {formatUSDC(deliverableAmount)}
+                          {index + 1}. {deliverable.name}: <span className="font-mono">{formatUSDC(deliverableAmount)}</span>
                         </p>
                         <p className="text-sm text-muted-foreground line-clamp-1">
                           {deliverable.criteria}

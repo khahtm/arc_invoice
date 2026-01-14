@@ -25,15 +25,15 @@ export function FeeBreakdown({ amount, variant, className }: FeeBreakdownProps) 
       <div className={cn('text-sm space-y-1', className)}>
         <div className="flex justify-between text-muted-foreground">
           <span>Invoice amount</span>
-          <span>{formatUSDC(fees.invoiceAmount)}</span>
+          <span className="font-mono">{formatUSDC(fees.invoiceAmount)}</span>
         </div>
         <div className="flex justify-between text-muted-foreground">
           <span>Platform fee (0.5%)</span>
-          <span className="text-orange-600">+{formatUSDC(fees.payerFee)}</span>
+          <span className="text-orange-600 font-mono">+{formatUSDC(fees.payerFee)}</span>
         </div>
         <div className="flex justify-between font-medium text-foreground border-t pt-1 mt-1">
           <span>You pay</span>
-          <span>{formatUSDC(fees.payerAmount)}</span>
+          <span className="font-mono">{formatUSDC(fees.payerAmount)}</span>
         </div>
       </div>
     );
@@ -43,15 +43,15 @@ export function FeeBreakdown({ amount, variant, className }: FeeBreakdownProps) 
     <div className={cn('text-sm space-y-1', className)}>
       <div className="flex justify-between text-muted-foreground">
         <span>Invoice amount</span>
-        <span>{formatUSDC(fees.invoiceAmount)}</span>
+        <span className="font-mono">{formatUSDC(fees.invoiceAmount)}</span>
       </div>
       <div className="flex justify-between text-muted-foreground">
         <span>Platform fee (0.5%)</span>
-        <span className="text-orange-600">-{formatUSDC(fees.creatorFee)}</span>
+        <span className="text-orange-600 font-mono">-{formatUSDC(fees.creatorFee)}</span>
       </div>
       <div className="flex justify-between font-medium text-foreground border-t pt-1 mt-1">
         <span>You receive</span>
-        <span className="text-green-600">{formatUSDC(fees.creatorAmount)}</span>
+        <span className="text-green-600 font-mono">{formatUSDC(fees.creatorAmount)}</span>
       </div>
     </div>
   );
@@ -65,14 +65,14 @@ export function FeeBreakdownInline({ amount, variant }: Omit<FeeBreakdownProps, 
 
   if (variant === 'payer') {
     return (
-      <span className="text-sm text-muted-foreground">
+      <span className="text-sm text-muted-foreground font-mono">
         {formatUSDC(fees.invoiceAmount)} + {formatUSDC(fees.payerFee)} fee = {formatUSDC(fees.payerAmount)}
       </span>
     );
   }
 
   return (
-    <span className="text-sm text-muted-foreground">
+    <span className="text-sm text-muted-foreground font-mono">
       {formatUSDC(fees.invoiceAmount)} - {formatUSDC(fees.creatorFee)} fee = {formatUSDC(fees.creatorAmount)}
     </span>
   );

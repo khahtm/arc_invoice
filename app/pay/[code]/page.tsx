@@ -310,7 +310,7 @@ export default function PaymentPage({
 
         {/* Amount */}
         <div className="text-center py-8 border-y">
-          <p className="text-4xl font-bold">{formatUSDC(invoice.amount)}</p>
+          <p className="text-4xl font-bold font-mono">{formatUSDC(invoice.amount)}</p>
           <p className="text-muted-foreground mt-1">USDC on Arc</p>
         </div>
 
@@ -324,7 +324,7 @@ export default function PaymentPage({
         <div className="py-4 border-t">
           <p className="text-sm text-muted-foreground">
             Paying to:{' '}
-            <span className="font-mono">
+            <span className="font-mono text-foreground">
               {truncateAddress(invoice.creator_wallet)}
             </span>
           </p>
@@ -387,7 +387,7 @@ export default function PaymentPage({
                     <p className="font-medium text-sm">
                       {i + 1}. {m.description}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground font-mono">
                       {formatUSDC(m.amount)}
                     </p>
                   </div>
@@ -434,7 +434,7 @@ export default function PaymentPage({
                 <span className="text-muted-foreground">
                   {i + 1}. {m.description}
                 </span>
-                <span className="font-medium">{formatUSDC(m.amount)}</span>
+                <span className="font-medium font-mono">{formatUSDC(m.amount)}</span>
               </div>
             ))}
             <div className="text-xs text-muted-foreground pt-2">

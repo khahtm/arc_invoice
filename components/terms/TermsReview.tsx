@@ -130,7 +130,7 @@ function DeliverableRow({
           <span className="font-medium text-sm">
             {index + 1}. {deliverable.name}
           </span>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs font-mono">
             {formatUSDC(amount)}
           </Badge>
         </div>

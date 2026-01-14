@@ -219,9 +219,6 @@ export function FundTermsEscrowButton({
 
   return (
     <Button onClick={handleClick} disabled={isDisabled} className="w-full">
-      {isLoading && step !== 'signing' && (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      )}
       {getButtonContent()}
     </Button>
   );

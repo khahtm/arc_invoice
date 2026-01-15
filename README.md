@@ -40,35 +40,12 @@ npm install
 
 # Copy environment template
 cp .env.example .env.local
-# Fill in your values (see Environment Variables section)
 
 # Run development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
-
-## Environment Variables
-
-Create `.env.local` with the following:
-
-```bash
-# App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Arc Chain Configuration
-NEXT_PUBLIC_CHAIN_ID=5042002
-NEXT_PUBLIC_RPC_URL=https://arc-testnet.drpc.org
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Contract Deployment (optional - for deploying contracts)
-DEPLOYER_PRIVATE_KEY=your_private_key
-USDC_ADDRESS=0x3600000000000000000000000000000000000000
-```
 
 ## Contract Addresses
 

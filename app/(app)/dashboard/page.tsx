@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { PrismButton } from '@/components/ui/prism-button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/common/StatCard';

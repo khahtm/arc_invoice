@@ -13,6 +13,8 @@
 		"deploy:mainnet": "hardhat run scripts/deploy.ts --network arcMainnet"
 	},
 	"dependencies": {
+		"@react-three/drei": "^10.0.0",
+		"@react-three/fiber": "^9.0.0",
 		"@hookform/resolvers": "^5.2.2",
 		"@radix-ui/react-checkbox": "^1.3.3",
 		"@radix-ui/react-dialog": "^1.1.15",
@@ -41,6 +43,7 @@
 		"siwe": "^3.0.0",
 		"sonner": "^2.0.7",
 		"tailwind-merge": "^3.4.0",
+		"three": "^0.170.0",
 		"viem": "^2.43.5",
 		"wagmi": "^3.1.4",
 		"zod": "^4.3.5"
@@ -52,6 +55,7 @@
 		"@types/node": "^20",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
+		"@types/three": "^0.170.0",
 		"dotenv": "^17.2.3",
 		"eslint": "^9",
 		"eslint-config-next": "16.1.1",

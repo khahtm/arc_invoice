@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { TrueFocus } from '@/components/ui/true-focus';
@@ -15,6 +16,11 @@ import {
   CreditCard,
 } from 'lucide-react';
 import Link from 'next/link';
+
+const Coin3DScene = dynamic(
+  () => import('@/components/ui/coin-3d').then((mod) => mod.Coin3DScene),
+  { ssr: false }
+);
 
 export default function HomePage() {
   // Always use relative path for internal navigation
@@ -100,10 +106,15 @@ export default function HomePage() {
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10">
+            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8">
               Create payment links in seconds. Get paid in USDC with built-in
               escrow protection. No fees on direct payments.
             </p>
+
+            {/* 3D USDC Coin */}
+            <div className="flex justify-center mb-10">
+              <Coin3DScene className="w-48 h-48 md:w-56 md:h-56" />
+            </div>
 
             {/* CTA */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

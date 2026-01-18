@@ -4,14 +4,14 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TEMPLATES } from '@/lib/terms/templates';
 import type { TemplateType } from '@/types/terms';
-import { Code, Palette, MessageSquare, Settings } from 'lucide-react';
+import { Code, Palette, MessageSquare, Settings, LucideIcon } from 'lucide-react';
 
 interface TemplateSelectorProps {
   value: TemplateType;
   onChange: (value: TemplateType) => void;
 }
 
-const ICONS: Record<TemplateType, React.ElementType> = {
+const ICONS: Record<TemplateType, LucideIcon> = {
   web_dev: Code,
   design: Palette,
   consulting: MessageSquare,

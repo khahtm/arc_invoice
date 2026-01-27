@@ -22,6 +22,7 @@ export interface Invoice {
   tx_hash: string | null;
   contract_version: number;
   proof_url: string | null;
+  yield_escrow_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

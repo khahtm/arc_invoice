@@ -41,17 +41,30 @@ export async function POST(req: Request) {
 
     const supabase = await createClient();
 
+    // Extract yield_escrow_enabled
+    const yieldEscrowEnabled = validatedData.yield_escrow_enabled ?? false;
+
     // Determine contract version:
+    // v5 = yield escrow (USYC yield via YIELD_FACTORY)
     // v4 = terms-based escrow (new default)
     // v3 = milestones (pay-per-milestone)
     // v1 = simple escrow
     const hasTerms = validatedData.terms && validatedData.payment_type === 'escrow';
     const hasMilestones =
       validatedData.milestones && validatedData.milestones.length > 0;
-    const contractVersion = hasTerms ? 4 : hasMilestones ? 3 : 1;
+
+    // Yield escrow takes priority when enabled
+    const contractVersion =
+      yieldEscrowEnabled && validatedData.payment_type === 'escrow'
+        ? 5
+        : hasTerms
+          ? 4
+          : hasMilestones
+            ? 3
+            : 1;
 
     // Create invoice (exclude milestones and terms from insert)
-    const { milestones, terms, ...invoiceData } = validatedData;
+    const { milestones, terms, yield_escrow_enabled, ...invoiceData } = validatedData;
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .insert({
@@ -61,6 +74,7 @@ export async function POST(req: Request) {
         creator_wallet: walletAddress,
         status: 'pending',
         contract_version: contractVersion,
+        yield_escrow_enabled: yieldEscrowEnabled,
       })
       .select()
       .single();

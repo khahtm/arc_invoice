@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { YieldBadge } from '@/components/escrow/YieldBadge';
 import { formatUSDC } from '@/lib/utils';
 import type { Invoice } from '@/types/database';
 
@@ -19,6 +20,8 @@ interface InvoiceCardProps {
 }
 
 export function InvoiceCard({ invoice }: InvoiceCardProps) {
+  const isYieldEscrow = invoice.yield_escrow_enabled || invoice.contract_version === 5;
+
   return (
     <Link href={`/invoices/${invoice.id}`} className="block">
       <Card className="p-4 hover:bg-accent transition-colors cursor-pointer">
@@ -31,6 +34,11 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
             <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
               {invoice.description}
             </p>
+            {isYieldEscrow && (
+              <div className="mt-2">
+                <YieldBadge />
+              </div>
+            )}
           </div>
           <div className="text-right">
             <Badge className={statusColors[invoice.status]}>

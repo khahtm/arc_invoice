@@ -20,6 +20,7 @@ export const invoiceSchema = z
       ),
     auto_release_days: z.number().min(1).max(90).optional(),
     milestones: z.array(milestoneSchema).max(10).optional(),
+    yield_escrow_enabled: z.boolean().optional().default(false),
   })
   .refine(
     (data) => {

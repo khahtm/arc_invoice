@@ -11,12 +11,16 @@ import { TransakPayButton } from '@/components/payment/TransakPayButton';
 import { FundEscrowButton } from '@/components/escrow/FundEscrowButton';
 import { FundMilestoneButton } from '@/components/escrow/FundMilestoneButton';
 import { TermsReview } from '@/components/terms/TermsReview';
+import { YieldBadge } from '@/components/escrow/YieldBadge';
+import { YieldProgress } from '@/components/escrow/YieldProgress';
+import { YieldSummary } from '@/components/escrow/YieldSummary';
 import { useEscrowStatus } from '@/hooks/useEscrowStatus';
 import {
   useTermsEscrowStatus,
   useAllDeliverableStatuses,
 } from '@/hooks/useTermsEscrowStatus';
 import { useDeliverableProofs } from '@/hooks/useDeliverableProofs';
+import { useYieldEscrowStatus } from '@/hooks/useYieldEscrowStatus';
 import { formatUSDC, truncateAddress } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ExternalLink } from 'lucide-react';
@@ -45,6 +49,7 @@ export default function PaymentPage({
   const [error, setError] = useState<string | null>(null);
 
   // Determine invoice version
+  const isV5 = invoice?.contract_version === 5;
   const isV4 = invoice?.contract_version === 4;
   const isV3 = invoice?.contract_version === 3;
 
@@ -113,6 +118,17 @@ export default function PaymentPage({
       isV4 ? (invoice?.escrow_address as `0x${string}`) : undefined,
       isV4 && terms ? terms.deliverables.length : 0
     );
+
+  // V5 yield escrow status
+  const yieldStatus = useYieldEscrowStatus(
+    isV5 ? (invoice?.escrow_address as `0x${string}` | undefined) ?? null : null
+  );
+
+  // Helper to calculate days locked
+  const calculateDaysLocked = (fundedAt: Date, releasedAt: Date): number => {
+    const diff = releasedAt.getTime() - fundedAt.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  };
 
   const handlePaymentSuccess = async (txHash: string) => {
     try {
@@ -330,8 +346,31 @@ export default function PaymentPage({
           </p>
         </div>
 
+        {/* V5 Yield Escrow UI */}
+        {isV5 && (
+          <div className="py-4 border-t space-y-3">
+            <YieldBadge />
+            {invoice.status === 'funded' && invoice.escrow_address && (
+              <YieldProgress
+                escrowAddress={invoice.escrow_address as `0x${string}`}
+                fundedAt={yieldStatus.fundedAt ?? new Date()}
+                autoReleaseDays={yieldStatus.autoReleaseDays ?? invoice.auto_release_days ?? 14}
+              />
+            )}
+            {invoice.status === 'released' && yieldStatus.originalAmount && (
+              <YieldSummary
+                originalAmount={parseFloat(yieldStatus.originalAmount)}
+                yieldEarned={parseFloat(yieldStatus.accruedYield)}
+                totalReceived={parseFloat(yieldStatus.currentValue)}
+                lockedDays={yieldStatus.fundedAt ? calculateDaysLocked(yieldStatus.fundedAt, new Date()) : 0}
+                releasedAt={new Date()}
+              />
+            )}
+          </div>
+        )}
+
         {/* Proof of Work - for non-milestone invoices */}
-        {invoice.proof_url && !isV3 && !isV4 && (
+        {invoice.proof_url && !isV3 && !isV4 && !isV5 && (
           <div className="py-4 border-t">
             <p className="text-sm font-medium mb-2">Proof of Work</p>
             <a
@@ -451,7 +490,7 @@ export default function PaymentPage({
             </p>
           </div>
         ) : (
-          !isV4 && (
+          !isV4 && !isV5 && (
             <div className="space-y-4 mt-4">
               {/* Section Header */}
               <div className="relative">
@@ -480,10 +519,11 @@ export default function PaymentPage({
                   />
                 )}
 
-                {/* V1/V2: Fund all upfront */}
+                {/* V1/V2/V5: Fund all upfront */}
                 {invoice.payment_type === 'escrow' &&
                   invoice.escrow_address &&
-                  !isV3 && (
+                  !isV3 &&
+                  !isV4 && (
                     <FundEscrowButton
                       escrowAddress={invoice.escrow_address as `0x${string}`}
                       amount={invoice.amount.toString()}
@@ -540,9 +580,11 @@ export default function PaymentPage({
           <p className="text-xs text-muted-foreground text-center">
             {invoice.payment_type === 'direct'
               ? 'Direct payment - funds sent immediately to recipient'
-              : isV4
-                ? 'Terms-based escrow - funds held securely, released per deliverable'
-                : 'Escrow payment - funds held securely until release'}
+              : isV5
+                ? 'Yield escrow - funds earn USYC yield while held in escrow'
+                : isV4
+                  ? 'Terms-based escrow - funds held securely, released per deliverable'
+                  : 'Escrow payment - funds held securely until release'}
           </p>
         </div>
       </Card>

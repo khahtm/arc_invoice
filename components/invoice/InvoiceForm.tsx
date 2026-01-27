@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { PaymentTypeSelector } from './PaymentTypeSelector';
 import { MilestoneInputList } from './MilestoneInputList';
 import { TermsEditor } from '@/components/terms/TermsEditor';
+import { YieldEscrowToggle } from '@/components/escrow/YieldEscrowToggle';
 import { invoiceSchema, type InvoiceFormData } from '@/lib/validation';
 import type { MilestoneInput } from '@/types/database';
 import type { CreateTermsInput } from '@/types/terms';
@@ -23,6 +24,7 @@ interface InvoiceFormProps {
 export function InvoiceForm({ onSubmit, isLoading }: InvoiceFormProps) {
   const [enableMilestones, setEnableMilestones] = useState(false);
   const [enableTerms, setEnableTerms] = useState(true); // V4 terms enabled by default
+  const [yieldEscrowEnabled, setYieldEscrowEnabled] = useState(false);
   const [milestones, setMilestones] = useState<MilestoneInput[]>([]);
   const [terms, setTerms] = useState<CreateTermsInput | null>(null);
 
@@ -57,10 +59,12 @@ export function InvoiceForm({ onSubmit, isLoading }: InvoiceFormProps) {
   const handleFormSubmit = async (data: InvoiceFormData) => {
     await onSubmit({
       ...data,
-      // Include terms for escrow with V4 terms enabled
-      terms: paymentType === 'escrow' && enableTerms ? terms ?? undefined : undefined,
-      // Include milestones for legacy V3 flow
-      milestones: paymentType === 'escrow' && enableMilestones && !enableTerms ? milestones : undefined,
+      // Include yield_escrow_enabled flag
+      yield_escrow_enabled: yieldEscrowEnabled,
+      // Include terms for escrow with V4 terms enabled (not for yield escrow)
+      terms: paymentType === 'escrow' && enableTerms && !yieldEscrowEnabled ? terms ?? undefined : undefined,
+      // Include milestones for legacy V3 flow (not for yield escrow)
+      milestones: paymentType === 'escrow' && enableMilestones && !enableTerms && !yieldEscrowEnabled ? milestones : undefined,
     });
   };
 
@@ -118,21 +122,17 @@ export function InvoiceForm({ onSubmit, isLoading }: InvoiceFormProps) {
 
       {paymentType === 'escrow' && (
         <>
-          {/* V4 Terms-based or V3 Milestone switch */}
-          <div className="flex items-center justify-between border-t pt-4">
-            <div>
-              <Label htmlFor="enable-terms">Use Contract Terms (Recommended)</Label>
-              <p className="text-sm text-muted-foreground">
-                Define deliverables with acceptance criteria
-              </p>
-            </div>
-            <Switch
-              id="enable-terms"
-              checked={enableTerms}
-              onCheckedChange={(checked) => {
-                setEnableTerms(checked);
+          {/* Yield Escrow Toggle */}
+          <div className="border-t pt-4">
+            <YieldEscrowToggle
+              enabled={yieldEscrowEnabled}
+              onToggle={(checked) => {
+                setYieldEscrowEnabled(checked);
                 if (checked) {
+                  // Disable terms and milestones when yield escrow enabled
+                  setEnableTerms(false);
                   setEnableMilestones(false);
+                  setTerms(null);
                   setMilestones([]);
                   setValue('milestones', undefined);
                 }
@@ -140,8 +140,32 @@ export function InvoiceForm({ onSubmit, isLoading }: InvoiceFormProps) {
             />
           </div>
 
-          {/* V4 Terms Editor */}
-          {enableTerms && amount > 0 && (
+          {/* V4 Terms-based or V3 Milestone switch (hidden when yield escrow enabled) */}
+          {!yieldEscrowEnabled && (
+            <div className="flex items-center justify-between border-t pt-4">
+              <div>
+                <Label htmlFor="enable-terms">Use Contract Terms (Recommended)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Define deliverables with acceptance criteria
+                </p>
+              </div>
+              <Switch
+                id="enable-terms"
+                checked={enableTerms}
+                onCheckedChange={(checked) => {
+                  setEnableTerms(checked);
+                  if (checked) {
+                    setEnableMilestones(false);
+                    setMilestones([]);
+                    setValue('milestones', undefined);
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* V4 Terms Editor (hidden when yield escrow enabled) */}
+          {!yieldEscrowEnabled && enableTerms && amount > 0 && (
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Contract Terms</h3>
               <TermsEditor
@@ -152,14 +176,14 @@ export function InvoiceForm({ onSubmit, isLoading }: InvoiceFormProps) {
             </div>
           )}
 
-          {enableTerms && amount <= 0 && (
+          {!yieldEscrowEnabled && enableTerms && amount <= 0 && (
             <p className="text-sm text-muted-foreground">
               Enter an amount above to configure contract terms
             </p>
           )}
 
-          {/* Legacy V3 Milestones (hidden when terms enabled) */}
-          {!enableTerms && (
+          {/* Legacy V3 Milestones (hidden when terms or yield escrow enabled) */}
+          {!yieldEscrowEnabled && !enableTerms && (
             <>
               <div>
                 <Label htmlFor="auto_release_days">Auto-release after (days)</Label>

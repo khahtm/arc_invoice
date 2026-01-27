@@ -582,3 +582,10 @@ export const MILESTONE_ESCROW_ABI = [
     inputs: [{ name: 'newExecutor', type: 'address', indexed: true }],
   },
 ] as const;
+
+// ============================================
+// V5 ABIs (USYC Yield Escrow)
+// ============================================
+
+export { YIELD_ESCROW_ABI } from './abis/yield-escrow-abi';
+export { YIELD_FACTORY_ABI } from './abis/yield-factory-abi';

@@ -18,6 +18,9 @@ export const CONTRACTS = {
     // V4: Terms-based escrow factory (new invoices with terms)
     // Updated 2026-01-08: Creator can now release (not just payer)
     TERMS_FACTORY: '0x6E10Eed6f1f1FBB206c8570Fc3Cd394589863C36' as const,
+    // V5: USYC yield-earning escrow factory
+    YIELD_FACTORY: '' as const,
+    MOCK_USYC: '' as const,
   },
   // Arc Mainnet (Chain ID: 5042001) - Placeholder until mainnet launches
   5042001: {
@@ -27,12 +30,14 @@ export const CONTRACTS = {
     MILESTONE_FACTORY: '' as const,
     MILESTONE_FACTORY_V2_LEGACY: '' as const,
     TERMS_FACTORY: '' as const,
+    YIELD_FACTORY: '' as const,
+    MOCK_USYC: '' as const,
   },
 } as const;
 
 export type SupportedChainId = keyof typeof CONTRACTS;
 
-export type ContractName = 'USDC' | 'FACTORY' | 'FEE_COLLECTOR' | 'MILESTONE_FACTORY' | 'MILESTONE_FACTORY_V2_LEGACY' | 'TERMS_FACTORY';
+export type ContractName = 'USDC' | 'FACTORY' | 'FEE_COLLECTOR' | 'MILESTONE_FACTORY' | 'MILESTONE_FACTORY_V2_LEGACY' | 'TERMS_FACTORY' | 'YIELD_FACTORY' | 'MOCK_USYC';
 
 export function getContractAddress(
   chainId: number,
@@ -72,4 +77,11 @@ export function getMilestoneFactory(
  */
 export function getTermsFactory(chainId: number): `0x${string}` {
   return getContractAddress(chainId, 'TERMS_FACTORY');
+}
+
+/**
+ * Get yield factory address for V5 USYC yield-earning escrow
+ */
+export function getYieldFactory(chainId: number): `0x${string}` {
+  return getContractAddress(chainId, 'YIELD_FACTORY');
 }

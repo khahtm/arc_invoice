@@ -1,0 +1,133 @@
+// ABI for ArcYieldEscrow contract
+// USYC yield-earning escrow for invoices
+
+export const YIELD_ESCROW_ABI = [
+  {
+    name: 'deposit',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'invoiceAmount', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    name: 'release',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: 'refund',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: 'getCurrentValue',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getAccruedYield',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getDetails',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      { name: '_creator', type: 'address' },
+      { name: '_payer', type: 'address' },
+      { name: '_originalUsdcAmount', type: 'uint256' },
+      { name: '_depositedUsycShares', type: 'uint256' },
+      { name: '_state', type: 'uint8' },
+      { name: '_fundedAt', type: 'uint256' },
+      { name: '_autoReleaseDays', type: 'uint256' },
+      { name: '_canAutoRelease', type: 'bool' },
+    ],
+  },
+  {
+    name: 'state',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint8' }],
+  },
+  {
+    name: 'originalUsdcAmount',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'depositedUsycShares',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'payer',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'creator',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'fundedAt',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'canAutoRelease',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    name: 'Deposited',
+    type: 'event',
+    inputs: [
+      { name: 'payer', type: 'address', indexed: true },
+      { name: 'usdcAmount', type: 'uint256', indexed: false },
+      { name: 'usycShares', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    name: 'Released',
+    type: 'event',
+    inputs: [
+      { name: 'creator', type: 'address', indexed: true },
+      { name: 'totalRedeemed', type: 'uint256', indexed: false },
+      { name: 'fee', type: 'uint256', indexed: false },
+      { name: 'yieldEarned', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    name: 'Refunded',
+    type: 'event',
+    inputs: [
+      { name: 'payer', type: 'address', indexed: true },
+      { name: 'totalRedeemed', type: 'uint256', indexed: false },
+      { name: 'yieldEarned', type: 'uint256', indexed: false },
+    ],
+  },
+] as const;

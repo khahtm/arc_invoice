@@ -1,5 +1,6 @@
 const { ethers, network } = require('hardhat');
 const dotenv = require('dotenv');
+const fs = require('fs');
 
 // Load env files
 dotenv.config({ path: '.env.local' });
@@ -67,9 +68,24 @@ async function main() {
     console.log(`npx hardhat verify --network ${network.name} ${usycAddress} ${USDC_ADDRESS} 380`);
   }
   console.log(`npx hardhat verify --network ${network.name} ${factoryAddress} ${USDC_ADDRESS} ${usycAddress} ${FEE_COLLECTOR}`);
+
+  // Write results to file for CI/automation
+  const results = {
+    network: network.name,
+    chainId: network.config.chainId,
+    factoryAddress,
+    usycAddress,
+    feeCollector: FEE_COLLECTOR,
+    usdcAddress: USDC_ADDRESS,
+    deployer: deployer.address,
+    timestamp: new Date().toISOString(),
+  };
+  fs.writeFileSync('deploy_v5_result.json', JSON.stringify(results, null, 2));
 }
 
 main().catch((error) => {
+  const errMsg = error?.message || String(error);
+  fs.writeFileSync('deploy_v5_error.txt', errMsg);
   console.error(error);
   process.exitCode = 1;
 });

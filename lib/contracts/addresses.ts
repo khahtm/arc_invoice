@@ -19,8 +19,8 @@ export const CONTRACTS = {
     // Updated 2026-01-08: Creator can now release (not just payer)
     TERMS_FACTORY: '0x6E10Eed6f1f1FBB206c8570Fc3Cd394589863C36' as const,
     // V5: USYC yield-earning escrow factory
-    YIELD_FACTORY: '' as const,
-    MOCK_USYC: '' as const,
+    YIELD_FACTORY: '0x30220b2260165fEBD7a24C174622D0099a682fC9' as const,
+    MOCK_USYC: '0x155F4F1aAC574AcE671BED6a08e6b9d2D29ce43e' as const,
   },
   // Arc Mainnet (Chain ID: 5042001) - Placeholder until mainnet launches
   5042001: {

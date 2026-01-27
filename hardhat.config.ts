@@ -40,7 +40,7 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      arcTestnet: process.env.ARC_EXPLORER_API_KEY || '',
+      arcTestnet: process.env.ARC_EXPLORER_API_KEY || 'no-api-key-needed',
     },
     customChains: [
       {

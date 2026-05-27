@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { Geist, DM_Mono } from 'next/font/google';
+import { Geist, DM_Mono, Montserrat } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
 const geistSans = Geist({
@@ -8,11 +9,18 @@ const geistSans = Geist({
   subsets: ['latin'],
 });
 
+const montserrat = Montserrat({
+  variable: '--font-montserrat',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+});
+
 const dmMono = DM_Mono({
   variable: '--font-dm-mono',
   subsets: ['latin'],
   weight: ['300', '400', '500'],
 });
+
 
 export const metadata: Metadata = {
   title: 'Arc Invoice',
@@ -50,9 +58,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${dmMono.variable} antialiased`}
+        className={`${geistSans.variable} ${dmMono.variable} ${montserrat.variable} antialiased`}
       >
-        {children}
+        <TooltipProvider delayDuration={300}>
+          {children}
+        </TooltipProvider>
         <Toaster />
       </body>
     </html>

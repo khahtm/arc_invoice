@@ -9,6 +9,7 @@ interface GlareHoverProps {
   glareOpacity?: number;
   glareSize?: number;
   borderRadius?: string;
+  glareColor?: string;
 }
 
 export function GlareHover({
@@ -17,6 +18,7 @@ export function GlareHover({
   glareOpacity = 0.4,
   glareSize = 300,
   borderRadius = '1rem',
+  glareColor = '255,255,255',
 }: GlareHoverProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [glarePosition, setGlarePosition] = useState({ x: 0, y: 0 });
@@ -47,8 +49,8 @@ export function GlareHover({
           opacity: isHovered ? 1 : 0,
           background: `
             radial-gradient(${glareSize}px circle at ${glarePosition.x}px ${glarePosition.y}px,
-              rgba(255,255,255,${glareOpacity}) 0%,
-              rgba(255,255,255,${glareOpacity * 0.5}) 25%,
+              rgba(${glareColor},${glareOpacity}) 0%,
+              rgba(${glareColor},${glareOpacity * 0.5}) 25%,
               transparent 60%)
           `,
           borderRadius,
@@ -59,7 +61,7 @@ export function GlareHover({
         className="pointer-events-none absolute inset-0 transition-opacity duration-200"
         style={{
           opacity: isHovered ? 1 : 0,
-          boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.3), 0 0 20px rgba(0,0,0,0.1)`,
+          boxShadow: `inset 0 0 0 1px rgba(${glareColor},0.3), 0 0 20px rgba(0,0,0,0.05)`,
           borderRadius,
         }}
       />

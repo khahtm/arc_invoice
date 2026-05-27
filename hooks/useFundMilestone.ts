@@ -10,9 +10,9 @@ import {
 import { parseUnits } from 'viem';
 import {
   ERC20_ABI,
-  MILESTONE_ESCROW_ABI,
   FEE_COLLECTOR_ABI,
 } from '@/lib/contracts/abi';
+import { DEAL_ESCROW_ABI } from '@/lib/contracts/deal-abi';
 import { getContractAddress } from '@/lib/contracts/addresses';
 
 /**
@@ -89,7 +89,7 @@ export function useFundMilestone(
   const fundMilestone = () => {
     fund({
       address: escrowAddress,
-      abi: MILESTONE_ESCROW_ABI,
+      abi: DEAL_ESCROW_ABI,
       functionName: 'fundMilestone',
       args: [BigInt(milestoneIndex)],
     });

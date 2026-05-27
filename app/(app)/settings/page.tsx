@@ -3,6 +3,7 @@
 import { useAccount, useDisconnect } from 'wagmi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { truncateAddress } from '@/lib/utils';
 import { Copy, Check, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
@@ -23,7 +24,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="max-w-xl space-y-8">
       <h1 className="text-2xl font-bold">Settings</h1>
 
       <Card className="p-6 space-y-4">
@@ -40,9 +41,14 @@ export default function SettingsPage() {
             <code className="flex-1 text-xs bg-muted px-3 py-2 rounded break-all">
               {address}
             </code>
-            <Button variant="outline" size="icon" onClick={handleCopy}>
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={handleCopy}>
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{copied ? 'Copied!' : 'Copy address'}</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -54,9 +60,14 @@ export default function SettingsPage() {
         )}
 
         <div className="pt-4 border-t">
-          <Button variant="destructive" onClick={() => disconnect()}>
-            Disconnect Wallet
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="destructive" onClick={() => disconnect()}>
+                Disconnect Wallet
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Sign out and disconnect your wallet</TooltipContent>
+          </Tooltip>
         </div>
       </Card>
 

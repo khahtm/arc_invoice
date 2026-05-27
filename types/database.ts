@@ -6,6 +6,8 @@ export type InvoiceStatus = 'draft' | 'pending' | 'funded' | 'released' | 'refun
 // V3: pending -> funded -> released (no separate approval)
 export type MilestoneStatus = 'pending' | 'funded' | 'approved' | 'released';
 
+export type DealStatus = 'draft' | 'signed' | 'funded' | 'active' | 'disputed' | 'completed' | 'refunded';
+
 export interface Invoice {
   id: string;
   short_code: string;
@@ -22,6 +24,15 @@ export interface Invoice {
   tx_hash: string | null;
   contract_version: number;
   proof_url: string | null;
+  deal_mode: boolean;
+  terms_hash: string | null;
+  client_wallet: string | null;
+  client_signed_at: string | null;
+  creator_signed_at: string | null;
+  deal_status: DealStatus;
+  last_activity_at: string | null;
+  dispute_reason: string | null;
+  disputed_milestone_index: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +45,11 @@ export interface Milestone {
   description: string;
   status: MilestoneStatus;
   proof_url: string | null;
+  delivered: boolean;
+  delivered_at: string | null;
+  approved: boolean;
+  approved_at: string | null;
+  released: boolean;
   released_at: string | null;
   created_at: string;
 }

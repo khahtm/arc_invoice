@@ -23,9 +23,9 @@ export function PaymentTypeSelector({
         )}
         onClick={() => onChange('direct')}
       >
-        <h3 className="font-semibold">Direct Payment</h3>
+        <h3 className="font-semibold">Instant Pay</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Instant wallet-to-wallet transfer
+          Immediate transfer. 0% fee.
         </p>
       </Card>
 
@@ -38,9 +38,9 @@ export function PaymentTypeSelector({
         )}
         onClick={() => onChange('escrow')}
       >
-        <h3 className="font-semibold">Escrow Payment</h3>
+        <h3 className="font-semibold">Protected Pay</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Funds held until you approve
+          Held in escrow until you release. 1% fee.
         </p>
       </Card>
     </div>

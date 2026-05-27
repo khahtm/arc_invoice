@@ -3,10 +3,13 @@
 import { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { Providers } from './providers';
+import Image from 'next/image';
 import { ConnectButton } from '@/components/wallet/ConnectButton';
+import { ChainBubblesBackground } from '@/components/wallet/ChainBubblesBackground';
 import { useSession } from '@/hooks/useSession';
 import { useSIWE } from '@/hooks/useSIWE';
 import { MobileNav } from '@/components/layout/MobileNav';
+import { TourProvider } from '@/components/tour/tour-provider';
 import { toast } from 'sonner';
 
 // Inner component that uses wagmi hooks (must be inside Providers)
@@ -36,31 +39,40 @@ function AuthContent({ children }: { children: React.ReactNode }) {
     }
   }, [isConnected, isAuthenticated, signOut, refresh]);
 
-  // Show loading state
   if (sessionLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+        <Image src="/logo-new.png" alt="Arc Invoice" width={200} height={48} className="h-12 w-auto" />
+        <div className="flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full bg-[#005FFE] animate-pulse" />
+          <p className="text-muted-foreground font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
 
-  // Show connect wallet prompt if not connected
   if (!isConnected) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <h1 className="text-2xl font-bold">Arc Invoice</h1>
-        <p className="text-muted-foreground">Connect your wallet to continue</p>
+      <div className="relative min-h-screen flex flex-col items-center justify-center gap-12">
+        <ChainBubblesBackground />
+        <Image src="/logo-new.png" alt="Arc Invoice" width={280} height={64} className="relative z-10 h-16 w-auto" />
+        <div className="relative z-10 flex flex-col items-center gap-3">
+          <p className="text-foreground text-xl font-semibold">Connect your wallet to continue</p>
+          <p className="text-muted-foreground text-base">Accept USDC payments from any chain</p>
+        </div>
         <ConnectButton />
       </div>
     );
   }
 
-  // Show signing state
   if (siweLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="animate-pulse text-muted-foreground">Signing in...</div>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+        <Image src="/logo-new.png" alt="Arc Invoice" width={200} height={48} className="h-12 w-auto" />
+        <div className="flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full bg-[#005FFE] animate-pulse" />
+          <p className="text-muted-foreground font-medium">Signing in...</p>
+        </div>
         <p className="text-sm text-muted-foreground">
           Please sign the message in your wallet
         </p>
@@ -69,9 +81,11 @@ function AuthContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <MobileNav>{children}</MobileNav>
-    </div>
+    <TourProvider>
+      <div className="min-h-screen bg-background flex flex-col">
+        <MobileNav>{children}</MobileNav>
+      </div>
+    </TourProvider>
   );
 }
 

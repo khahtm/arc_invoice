@@ -64,7 +64,7 @@ export default function InvoicesPage() {
   const paginatedInvoices = invoices.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Your Invoices</h1>
         <p className="text-muted-foreground">{invoices.length} total</p>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Globe, Zap, Shield, Layers, Clock, BarChart3, type LucideIcon } from 'lucide-react';
+import { Globe, Zap, Shield, Layers, Clock, BarChart3, Sparkles, FileText, Scale, type LucideIcon } from 'lucide-react';
 import { GlareHover } from '@/components/ui/glare-hover';
 
 // Wickret-inspired feature cards grid for the marketing page.
@@ -49,6 +49,24 @@ const FEATURES: FeatureItem[] = [
     title: 'Dashboard & Analytics',
     description:
       'Track revenue across chains, monitor payment status, and manage all invoices in one place.',
+  },
+  {
+    Icon: Sparkles,
+    title: 'AI Deal Builder',
+    description:
+      'Describe your project — AI generates milestones with market-rate pricing. One click to create a deal.',
+  },
+  {
+    Icon: FileText,
+    title: 'AI Proposal Generator',
+    description:
+      'Paste any job posting. AI writes your proposal, sets up milestones, and creates a deal link to send.',
+  },
+  {
+    Icon: Scale,
+    title: 'AI Dispute Mediator',
+    description:
+      'Get a free AI analysis before escalating to arbitration. Non-binding, fair, and instant.',
   },
 ];
 

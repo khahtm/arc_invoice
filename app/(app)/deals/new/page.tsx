@@ -41,13 +41,14 @@ export default function NewDealPage() {
     setStep('deploying');
 
     try {
-      // Create DB record first to get the deal ID
       const res = await fetch('/api/deals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      const result = await res.json();
+      const text = await res.text();
+      let result;
+      try { result = JSON.parse(text); } catch { throw new Error(`Server error: ${text.slice(0, 200)}`); }
       if (!res.ok) throw new Error(result.error || 'Failed to create deal');
 
       pendingDealId.current = result.deal.id;

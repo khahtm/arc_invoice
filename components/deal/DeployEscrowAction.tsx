@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useDeployDealEscrow } from '@/hooks/useDeployDealEscrow';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import type { DealWithMilestones } from '@/hooks/useDeals';
 import type { DealFormData } from '@/lib/validation';
 
@@ -81,13 +82,20 @@ export function DeployEscrowAction({
         </p>
       )}
 
-      <Button onClick={handleDeploy} disabled={busy} className="w-full" size="lg">
-        {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {isPending && 'Confirm in your wallet...'}
-        {isConfirming && 'Deploying escrow...'}
-        {isSaving && 'Saving...'}
-        {!busy && (error ? 'Retry Deployment' : 'Deploy Escrow Contract')}
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button onClick={handleDeploy} disabled={busy} className="flex-1" size="lg">
+          {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isPending && 'Confirm in your wallet...'}
+          {isConfirming && 'Deploying escrow...'}
+          {isSaving && 'Saving...'}
+          {!busy && (error ? 'Retry Deployment' : 'Deploy Escrow Contract')}
+        </Button>
+        <Link href={`/deals/new?edit=${deal.id}`} className="sm:w-auto">
+          <Button variant="outline" size="lg" disabled={busy} className="w-full">
+            <Pencil className="mr-2 h-4 w-4" /> Edit details
+          </Button>
+        </Link>
+      </div>
     </Card>
   );
 }

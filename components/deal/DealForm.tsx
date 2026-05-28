@@ -17,10 +17,24 @@ import type { AIMilestone } from '@/lib/ai/types';
 interface DealFormProps {
   onSubmit: (data: DealFormData) => Promise<void>;
   isLoading?: boolean;
-  initialValues?: { description: string; milestones: { description: string; amount: number }[] };
+  initialValues?: {
+    description: string;
+    milestones: { description: string; amount: number }[];
+    client_name?: string;
+    client_email?: string;
+    auto_release_days?: number;
+  };
+  submitLabel?: string;
+  loadingLabel?: string;
 }
 
-export function DealForm({ onSubmit, isLoading, initialValues }: DealFormProps) {
+export function DealForm({
+  onSubmit,
+  isLoading,
+  initialValues,
+  submitLabel = 'Create Deal',
+  loadingLabel = 'Creating Deal...',
+}: DealFormProps) {
   const {
     register,
     handleSubmit,
@@ -32,8 +46,10 @@ export function DealForm({ onSubmit, isLoading, initialValues }: DealFormProps) 
   } = useForm<any>({
     resolver: zodResolver(dealSchema),
     defaultValues: {
-      auto_release_days: 14,
+      auto_release_days: initialValues?.auto_release_days ?? 14,
       description: initialValues?.description || '',
+      client_name: initialValues?.client_name || '',
+      client_email: initialValues?.client_email || '',
       milestones: initialValues?.milestones?.length ? initialValues.milestones : [{ description: '', amount: 0 }],
     },
   });
@@ -201,7 +217,7 @@ export function DealForm({ onSubmit, isLoading, initialValues }: DealFormProps) 
       </div>
 
       <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-        {isLoading ? 'Creating Deal...' : 'Create Deal'}
+        {isLoading ? loadingLabel : submitLabel}
       </Button>
     </form>
   );

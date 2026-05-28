@@ -16,7 +16,12 @@ export default function NewDealPage() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>('form');
 
-  const initialValues = useMemo(() => {
+  // Edit mode: re-open a draft deal (e.g. after a failed deploy) to fix details.
+  const editId = searchParams.get('edit');
+  const [editValues, setEditValues] = useState<DealFormData | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState(!!editId);
+
+  const proposalValues = useMemo(() => {
     if (searchParams.get('from') !== 'proposal') return undefined;
     try {
       const raw = sessionStorage.getItem('proposal-deal');
@@ -25,6 +30,33 @@ export default function NewDealPage() {
       return JSON.parse(raw) as { description: string; milestones: { description: string; amount: number }[] };
     } catch { return undefined; }
   }, [searchParams]);
+
+  // Load the draft to edit
+  useEffect(() => {
+    if (!editId) return;
+    let cancelled = false;
+    fetch(`/api/deals/${editId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled || !data.deal) return;
+        const d = data.deal;
+        setEditValues({
+          description: d.description || '',
+          client_name: d.client_name || undefined,
+          client_email: d.client_email || undefined,
+          auto_release_days: d.auto_release_days,
+          milestones: (d.milestones || []).map((m: { description: string; amount: number }) => ({
+            description: m.description,
+            amount: m.amount,
+          })),
+        });
+      })
+      .catch(() => toast.error('Failed to load deal for editing'))
+      .finally(() => { if (!cancelled) setLoadingEdit(false); });
+    return () => { cancelled = true; };
+  }, [editId]);
+
+  const initialValues = editId ? editValues ?? undefined : proposalValues;
   const [formData, setFormData] = useState<DealFormData | null>(null);
   const pendingDealId = useRef<string | null>(null);
   const {
@@ -41,20 +73,20 @@ export default function NewDealPage() {
     setStep('deploying');
 
     try {
-      const res = await fetch('/api/deals', {
-        method: 'POST',
+      const res = await fetch(editId ? `/api/deals/${editId}` : '/api/deals', {
+        method: editId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       const text = await res.text();
       let result;
       try { result = JSON.parse(text); } catch { throw new Error(`Server error: ${text.slice(0, 200)}`); }
-      if (!res.ok) throw new Error(result.error || 'Failed to create deal');
+      if (!res.ok) throw new Error(result.error || 'Failed to save deal');
 
       pendingDealId.current = result.deal.id;
       deploy(result.deal.id, data);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create deal');
+      toast.error(err instanceof Error ? err.message : 'Failed to save deal');
       setStep('form');
     }
   };
@@ -122,14 +154,33 @@ export default function NewDealPage() {
     );
   }
 
+  if (loadingEdit) {
+    return (
+      <div className="max-w-md mx-auto py-20 text-center">
+        <Loader2 className="h-10 w-10 text-[#005FFE] animate-spin mx-auto" />
+        <p className="text-muted-foreground mt-4 text-sm">Loading deal...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Create a New Deal</h1>
-        <p className="text-muted-foreground mt-1">Define milestones and share with your client for escrow-protected payments.</p>
+        <h1 className="text-2xl font-bold">{editId ? 'Edit Deal' : 'Create a New Deal'}</h1>
+        <p className="text-muted-foreground mt-1">
+          {editId
+            ? 'Update the details, then redeploy the escrow contract on-chain.'
+            : 'Define milestones and share with your client for escrow-protected payments.'}
+        </p>
       </div>
       <Card className="p-8">
-        <DealForm onSubmit={handleSubmit} isLoading={step !== 'form'} initialValues={initialValues} />
+        <DealForm
+          onSubmit={handleSubmit}
+          isLoading={step !== 'form'}
+          initialValues={initialValues}
+          submitLabel={editId ? 'Save & Deploy Escrow' : 'Create Deal'}
+          loadingLabel={editId ? 'Saving Deal...' : 'Creating Deal...'}
+        />
       </Card>
     </div>
   );

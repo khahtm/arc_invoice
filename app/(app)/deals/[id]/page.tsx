@@ -4,6 +4,7 @@ import { use } from 'react';
 import { useDealDetail } from '@/hooks/useDealDetail';
 import { MilestoneProgressBar } from '@/components/deal/milestone-progress-bar';
 import { FreelancerMilestoneActions } from '@/components/deal/FreelancerMilestoneActions';
+import { DeployEscrowAction } from '@/components/deal/DeployEscrowAction';
 import { ShareLink } from '@/components/deal/ShareLink';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +85,11 @@ export default function DealDetailPage({
         </div>
         <Badge className={status.color}>{status.label}</Badge>
       </div>
+
+      {/* Deploy escrow (draft deal without on-chain escrow, e.g. deploy failed) */}
+      {deal.deal_status === 'draft' && !deal.escrow_address && (
+        <DeployEscrowAction deal={deal} onDeployed={refetch} />
+      )}
 
       {/* Share Link */}
       <ShareLink shortCode={deal.short_code} />

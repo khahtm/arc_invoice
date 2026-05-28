@@ -94,7 +94,14 @@ export function useDealBuilderAgent(): UseDealBuilderReturn {
       const jsonMatch = fullText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('Could not parse AI response');
 
-      const parsed = JSON.parse(jsonMatch[0]) as DealBuilderResponse;
+      // Strip control characters that the LLM may embed inside JSON string values
+      const sanitized = jsonMatch[0].replace(/[\x00-\x1F\x7F]/g, (ch) => {
+        if (ch === '\n') return '\\n';
+        if (ch === '\r') return '\\r';
+        if (ch === '\t') return '\\t';
+        return '';
+      });
+      const parsed = JSON.parse(sanitized) as DealBuilderResponse;
       if (!validateMilestones(parsed)) throw new Error('AI returned invalid milestone data');
       setResult(parsed);
     } catch (err) {

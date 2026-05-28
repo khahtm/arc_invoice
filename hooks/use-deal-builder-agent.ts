@@ -12,6 +12,48 @@ interface UseDealBuilderReturn {
   reset: () => void;
 }
 
+function escapeControlCharsInStrings(input: string): string {
+  let out = '';
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (inString) {
+      if (escape) {
+        out += ch;
+        escape = false;
+        continue;
+      }
+      if (ch === '\\') {
+        out += ch;
+        escape = true;
+        continue;
+      }
+      if (ch === '"') {
+        out += ch;
+        inString = false;
+        continue;
+      }
+      // Inside a string: escape raw control characters
+      const code = ch.charCodeAt(0);
+      if (code < 0x20) {
+        if (ch === '\n') out += '\\n';
+        else if (ch === '\r') out += '\\r';
+        else if (ch === '\t') out += '\\t';
+        else if (ch === '\b') out += '\\b';
+        else if (ch === '\f') out += '\\f';
+        else out += '\\u' + code.toString(16).padStart(4, '0');
+        continue;
+      }
+      out += ch;
+    } else {
+      if (ch === '"') inString = true;
+      out += ch;
+    }
+  }
+  return out;
+}
+
 function validateMilestones(parsed: DealBuilderResponse): boolean {
   if (!Array.isArray(parsed.milestones) || parsed.milestones.length === 0 || parsed.milestones.length > 20) return false;
   return parsed.milestones.every(
@@ -94,13 +136,10 @@ export function useDealBuilderAgent(): UseDealBuilderReturn {
       const jsonMatch = fullText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('Could not parse AI response');
 
-      // Strip control characters that the LLM may embed inside JSON string values
-      const sanitized = jsonMatch[0].replace(/[\x00-\x1F\x7F]/g, (ch) => {
-        if (ch === '\n') return '\\n';
-        if (ch === '\r') return '\\r';
-        if (ch === '\t') return '\\t';
-        return '';
-      });
+      // Escape unescaped control characters that appear inside JSON string literals
+      // (LLMs sometimes embed raw newlines/tabs inside string values, which breaks JSON.parse).
+      // Walk the text tracking string context, leaving structural whitespace untouched.
+      const sanitized = escapeControlCharsInStrings(jsonMatch[0]);
       const parsed = JSON.parse(sanitized) as DealBuilderResponse;
       if (!validateMilestones(parsed)) throw new Error('AI returned invalid milestone data');
       setResult(parsed);
